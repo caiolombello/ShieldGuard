@@ -1,6 +1,6 @@
 # ShieldGuard
 
-[![Security Scan](https://github.com/YOUR_USERNAME/ShieldGuard/actions/workflows/security-scan.yml/badge.svg)](https://github.com/YOUR_USERNAME/ShieldGuard/actions/workflows/security-scan.yml)
+[![Security Scan](https://github.com/caiolombello/ShieldGuard/actions/workflows/security-scan.yml/badge.svg)](https://github.com/YOUR_USERNAME/ShieldGuard/actions/workflows/security-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-blue.svg)](https://docs.microsoft.com/en-us/powershell/)
 

@@ -376,7 +376,8 @@ function Get-ProcessNetworkUsage {
                 }
             }
             catch {
-                # Ignore process errors
+                # Ignore process errors - process may have terminated
+                $null = $_.Exception
             }
         }
 

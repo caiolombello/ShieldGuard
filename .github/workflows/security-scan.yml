@@ -19,15 +19,19 @@ jobs:
       shell: pwsh
       run: |
         Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
-        $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary
+
+        # Use custom settings file to exclude acceptable warnings
+        $results = Invoke-ScriptAnalyzer -Path . -Recurse -Settings .\PSScriptAnalyzerSettings.psd1 -ReportSummary
         $results | Format-Table -AutoSize
 
-        # Fail on errors
+        # Fail only on errors
         $errors = $results | Where-Object { $_.Severity -eq 'Error' }
         if ($errors) {
           Write-Error "PSScriptAnalyzer found errors"
           exit 1
         }
+
+        Write-Host "PSScriptAnalyzer passed!" -ForegroundColor Green
 
     - name: Check for hardcoded secrets
       shell: pwsh

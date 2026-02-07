@@ -23,7 +23,7 @@ jobs:
         # Quick security validation before release
         Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
 
-        $errors = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+        $errors = Invoke-ScriptAnalyzer -Path . -Recurse -Settings .\PSScriptAnalyzerSettings.psd1 -Severity Error
         if ($errors) {
           $errors | Format-Table
           Write-Error "Cannot release: PSScriptAnalyzer found errors"
@@ -60,6 +60,7 @@ jobs:
           "Run.bat",
           "README.md",
           "LICENSE",
+          "SECURITY.md",
           "SHA256SUMS.txt",
           "TestCookieAccess.ps1"
         )

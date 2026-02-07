@@ -309,8 +309,8 @@ function Clear-BrowserSessions {
             # Firefox uses different structure
             $profiles = Get-ChildItem -Path $dataPath -Directory -ErrorAction SilentlyContinue
 
-            foreach ($profile in $profiles) {
-                $cookiesFile = Join-Path $profile.FullName $browserInfo.CookiesPath
+            foreach ($browserProfile in $profiles) {
+                $cookiesFile = Join-Path $browserProfile.FullName $browserInfo.CookiesPath
                 if (Test-Path $cookiesFile) {
                     Remove-Item $cookiesFile -Force -ErrorAction Stop
                     $deletedFiles += $cookiesFile
@@ -323,16 +323,16 @@ function Clear-BrowserSessions {
             $profiles = Get-ChildItem -Path $dataPath -Directory -ErrorAction SilentlyContinue |
                         Where-Object { $_.Name -match "^(Default|Profile \d+)$" }
 
-            foreach ($profile in $profiles) {
+            foreach ($browserProfile in $profiles) {
                 # Cookies
-                $cookiesFile = Join-Path $profile.FullName "Network\Cookies"
+                $cookiesFile = Join-Path $browserProfile.FullName "Network\Cookies"
                 if (Test-Path $cookiesFile) {
                     Remove-Item $cookiesFile -Force -ErrorAction Stop
                     $deletedFiles += $cookiesFile
                 }
 
                 # Session Storage
-                $sessionPath = Join-Path $profile.FullName "Session Storage"
+                $sessionPath = Join-Path $browserProfile.FullName "Session Storage"
                 if (Test-Path $sessionPath) {
                     Remove-Item $sessionPath -Recurse -Force -ErrorAction Stop
                     $deletedFiles += $sessionPath
@@ -502,7 +502,7 @@ function Get-SensitiveBrowserFiles {
             )
 
             foreach ($file in $files) {
-                $path = Join-Path $profile.FullName $file.Name
+                $path = Join-Path $browserProfile.FullName $file.Name
                 if (Test-Path $path) {
                     $sensitiveFiles += @{
                         Browser = $Browser
@@ -532,7 +532,7 @@ function Get-SensitiveBrowserFiles {
             )
 
             foreach ($file in $files) {
-                $path = Join-Path $profile.FullName $file.Path
+                $path = Join-Path $browserProfile.FullName $file.Path
                 if (Test-Path $path) {
                     $sensitiveFiles += @{
                         Browser = $Browser

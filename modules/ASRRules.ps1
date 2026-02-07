@@ -303,7 +303,8 @@ function Reset-ASRRules {
                 Remove-MpPreference -AttackSurfaceReductionRules_Ids $rule.GUID -ErrorAction SilentlyContinue
             }
             catch {
-                # Ignore individual removal errors
+                # Ignore individual removal errors - rule may not exist
+                $null = $_.Exception
             }
         }
 

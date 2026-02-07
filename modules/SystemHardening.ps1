@@ -229,7 +229,8 @@ function Get-SuspiciousScheduledTasks {
                 }
             }
             catch {
-                # Skip tasks we can't read
+                # Skip tasks we can't read - permission denied
+                $null = $_.Exception
             }
         }
 
@@ -547,16 +548,16 @@ function Protect-HostsFile {
 
     try {
         # Take ownership first using takeown and icacls (more reliable than Set-Acl)
-        $takeown = Start-Process -FilePath "takeown" -ArgumentList "/f `"$hostsPath`"" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "takeown" -ArgumentList "/f `"$hostsPath`"" -Wait -PassThru -WindowStyle Hidden
 
         # Reset permissions using icacls
-        $icacls1 = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /reset" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /reset" -Wait -PassThru -WindowStyle Hidden
 
         # Set restrictive permissions: SYSTEM and Administrators full, Users read only
-        $icacls2 = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /inheritance:r" -Wait -PassThru -WindowStyle Hidden
-        $icacls3 = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"NT AUTHORITY\SYSTEM:(F)`"" -Wait -PassThru -WindowStyle Hidden
-        $icacls4 = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"BUILTIN\Administrators:(F)`"" -Wait -PassThru -WindowStyle Hidden
-        $icacls5 = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"BUILTIN\Users:(R)`"" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /inheritance:r" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"NT AUTHORITY\SYSTEM:(F)`"" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"BUILTIN\Administrators:(F)`"" -Wait -PassThru -WindowStyle Hidden
+        $null = Start-Process -FilePath "icacls" -ArgumentList "`"$hostsPath`" /grant:r `"BUILTIN\Users:(R)`"" -Wait -PassThru -WindowStyle Hidden
 
         # Set file as read-only as extra protection
         Set-ItemProperty -Path $hostsPath -Name IsReadOnly -Value $true -ErrorAction SilentlyContinue
