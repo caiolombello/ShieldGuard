@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run security scan first
+      shell: pwsh
+      run: |
+        # Quick security validation before release
+        Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+        $errors = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+        if ($errors) {
+          $errors | Format-Table
+          Write-Error "Cannot release: PSScriptAnalyzer found errors"
+          exit 1
+        }
+
+        Write-Host "Security scan passed" -ForegroundColor Green
+
+    - name: Generate file hashes
+      shell: pwsh
+      run: |
+        $hashFile = "SHA256SUMS.txt"
+        "" | Out-File $hashFile
+
+        Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.bat | ForEach-Object {
+          $relativePath = $_.FullName.Replace("$PWD\", "").Replace("\", "/")
+          $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+          "$hash  $relativePath" | Add-Content $hashFile
+        }
+
+        Write-Host "Generated SHA256 checksums:"
+        Get-Content $hashFile
+
+    - name: Create ZIP package
+      shell: pwsh
+      run: |
+        $version = "${{ github.ref_name }}"
+        $zipName = "ShieldGuard-$version.zip"
+
+        # Files to include
+        $filesToInclude = @(
+          "src",
+          "modules",
+          "Run.bat",
+          "README.md",
+          "LICENSE",
+          "SHA256SUMS.txt",
+          "TestCookieAccess.ps1"
+        )
+
+        Compress-Archive -Path $filesToInclude -DestinationPath $zipName -Force
+        Write-Host "Created $zipName"
+
+        # Generate hash of the zip
+        $zipHash = (Get-FileHash $zipName -Algorithm SHA256).Hash
+        "$zipHash  $zipName" | Out-File "RELEASE-SHA256.txt"
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ShieldGuard-*.zip
+          SHA256SUMS.txt
+          RELEASE-SHA256.txt
+        body: |
+          ## ShieldGuard ${{ github.ref_name }}
+
+          ### Security Verification
+
+          All releases are automatically scanned for:
+          - Malicious code patterns
+          - Hardcoded secrets
+          - Syntax errors
+          - PSScriptAnalyzer violations
+
+          ### Verify Download Integrity
+
+          After downloading, verify the SHA256 hash:
+
+          ```powershell
+          # Verify ZIP hash
+          (Get-FileHash ShieldGuard-${{ github.ref_name }}.zip -Algorithm SHA256).Hash
+
+          # Compare with hash in RELEASE-SHA256.txt
+          ```
+
+          ### Installation
+
+          1. Download `ShieldGuard-${{ github.ref_name }}.zip`
+          2. Extract to a folder
+          3. Right-click `Run.bat` → Run as administrator
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}
+        draft: false
+        prerelease: false

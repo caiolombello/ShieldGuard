@@ -1,0 +1,134 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-analysis:
+    name: Security Analysis
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run PSScriptAnalyzer
+      shell: pwsh
+      run: |
+        Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+        $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary
+        $results | Format-Table -AutoSize
+
+        # Fail on errors
+        $errors = $results | Where-Object { $_.Severity -eq 'Error' }
+        if ($errors) {
+          Write-Error "PSScriptAnalyzer found errors"
+          exit 1
+        }
+
+    - name: Check for hardcoded secrets
+      shell: pwsh
+      run: |
+        $patterns = @(
+          'password\s*=\s*["\x27][^\x27"]+["\x27]',
+          'api[_-]?key\s*=\s*["\x27][^\x27"]+["\x27]',
+          'secret\s*=\s*["\x27][^\x27"]+["\x27]',
+          'token\s*=\s*["\x27][A-Za-z0-9+/=]{20,}["\x27]'
+        )
+
+        $findings = @()
+        Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.psd1 | ForEach-Object {
+          $content = Get-Content $_.FullName -Raw
+          foreach ($pattern in $patterns) {
+            if ($content -match $pattern) {
+              $findings += "Potential secret in: $($_.FullName)"
+            }
+          }
+        }
+
+        if ($findings) {
+          $findings | ForEach-Object { Write-Warning $_ }
+          Write-Error "Potential hardcoded secrets found!"
+          exit 1
+        }
+
+        Write-Host "No hardcoded secrets found" -ForegroundColor Green
+
+    - name: Verify no malicious patterns
+      shell: pwsh
+      run: |
+        $dangerousPatterns = @(
+          'Invoke-WebRequest.*\|.*Invoke-Expression',
+          'IEX\s*\(\s*\(New-Object',
+          'DownloadString.*\|.*IEX',
+          '-enc\s+[A-Za-z0-9+/=]{50,}',
+          'FromBase64String.*Invoke',
+          'Net\.WebClient.*DownloadFile.*Start-Process'
+        )
+
+        $findings = @()
+        Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.psd1,*.bat | ForEach-Object {
+          $content = Get-Content $_.FullName -Raw
+          foreach ($pattern in $dangerousPatterns) {
+            if ($content -match $pattern) {
+              $findings += "Dangerous pattern '$pattern' in: $($_.FullName)"
+            }
+          }
+        }
+
+        if ($findings) {
+          $findings | ForEach-Object { Write-Error $_ }
+          exit 1
+        }
+
+        Write-Host "No malicious patterns detected" -ForegroundColor Green
+
+    - name: Syntax validation
+      shell: pwsh
+      run: |
+        $errors = @()
+        Get-ChildItem -Recurse -Include *.ps1,*.psm1 | ForEach-Object {
+          $content = Get-Content $_.FullName -Raw
+          $syntaxErrors = $null
+          [System.Management.Automation.PSParser]::Tokenize($content, [ref]$syntaxErrors)
+          if ($syntaxErrors) {
+            $errors += "Syntax error in $($_.FullName): $($syntaxErrors.Message)"
+          }
+        }
+
+        if ($errors) {
+          $errors | ForEach-Object { Write-Error $_ }
+          exit 1
+        }
+
+        Write-Host "All files have valid syntax" -ForegroundColor Green
+
+  code-review:
+    name: Code Review Checks
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check file hashes
+      shell: pwsh
+      run: |
+        $hashes = @{}
+        Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.bat | ForEach-Object {
+          $hash = Get-FileHash $_.FullName -Algorithm SHA256
+          $hashes[$_.Name] = $hash.Hash
+          Write-Host "$($_.Name): $($hash.Hash)"
+        }
+
+        # Save hashes for release
+        $hashes | ConvertTo-Json | Out-File -FilePath "file-hashes.json"
+
+    - name: Upload hash artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: file-hashes
+        path: file-hashes.json
