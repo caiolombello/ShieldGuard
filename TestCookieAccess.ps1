@@ -58,7 +58,7 @@ foreach ($browserName in $browsers.Keys) {
     if ($cookiePath -and (Test-Path $cookiePath -ErrorAction SilentlyContinue)) {
         try {
             # Try to read first bytes (what stealers do)
-            $bytes = [System.IO.File]::ReadAllBytes($cookiePath) | Select-Object -First 100
+            $null = [System.IO.File]::ReadAllBytes($cookiePath) | Select-Object -First 100
             Write-Host "  [VULNERABLE] Cookies readable! Stealer could steal sessions" -ForegroundColor Red
             $results += @{ Browser = $browserName; File = "Cookies"; Status = "VULNERABLE"; Color = "Red" }
         }
@@ -87,7 +87,7 @@ foreach ($browserName in $browsers.Keys) {
 
     if ($loginPath -and (Test-Path $loginPath -ErrorAction SilentlyContinue)) {
         try {
-            $bytes = [System.IO.File]::ReadAllBytes($loginPath) | Select-Object -First 100
+            $null = [System.IO.File]::ReadAllBytes($loginPath) | Select-Object -First 100
             Write-Host "  [VULNERABLE] Login Data readable! Stealer could steal passwords" -ForegroundColor Red
             $results += @{ Browser = $browserName; File = "Login Data"; Status = "VULNERABLE"; Color = "Red" }
         }

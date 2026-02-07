@@ -492,7 +492,7 @@ function Get-SensitiveBrowserFiles {
     if ($Browser -eq "Firefox") {
         $profiles = Get-ChildItem -Path $dataPath -Directory -ErrorAction SilentlyContinue
 
-        foreach ($profile in $profiles) {
+        foreach ($browserProfile in $profiles) {
             $files = @(
                 @{ Name = "cookies.sqlite"; Type = "Cookies/Sessions"; Risk = "High" }
                 @{ Name = "logins.json"; Type = "Passwords (encrypted)"; Risk = "Critical" }
@@ -506,7 +506,7 @@ function Get-SensitiveBrowserFiles {
                 if (Test-Path $path) {
                     $sensitiveFiles += @{
                         Browser = $Browser
-                        Profile = $profile.Name
+                        Profile = $browserProfile.Name
                         File = $file.Name
                         Path = $path
                         Type = $file.Type
@@ -522,7 +522,7 @@ function Get-SensitiveBrowserFiles {
         $profiles = Get-ChildItem -Path $dataPath -Directory -ErrorAction SilentlyContinue |
                     Where-Object { $_.Name -match "^(Default|Profile \d+)$" }
 
-        foreach ($profile in $profiles) {
+        foreach ($browserProfile in $profiles) {
             $files = @(
                 @{ Path = "Network\Cookies"; Type = "Cookies/Sessions"; Risk = "High" }
                 @{ Path = "Login Data"; Type = "Passwords (encrypted)"; Risk = "Critical" }
@@ -536,7 +536,7 @@ function Get-SensitiveBrowserFiles {
                 if (Test-Path $path) {
                     $sensitiveFiles += @{
                         Browser = $Browser
-                        Profile = $profile.Name
+                        Profile = $browserProfile.Name
                         File = Split-Path $file.Path -Leaf
                         Path = $path
                         Type = $file.Type
@@ -597,7 +597,6 @@ function Test-BrowserCompromise {
         if (Test-Path $localStatePath) {
             $file = Get-Item $localStatePath
             $lastAccess = $file.LastAccessTime
-            $lastWrite = $file.LastWriteTime
 
             # If accessed in last 10 minutes without browser running
             $recentAccess = (Get-Date) - $lastAccess

@@ -545,6 +545,21 @@ $btnDisableRDP.Add_Click({
     } else { Write-Log "Error: $($result.Error)" "ERROR" }
 })
 
+$btnCheckHosts.Add_Click({
+    Write-Log "Scanning hosts file..." "INFO"
+    $result = Get-HostsFileStatus
+    $txtHostsStatus.Text = "$($result.SuspiciousCount) found"
+    $txtHostsStatus.Foreground = if ($result.SuspiciousCount -gt 0) { "#dc3545" } else { "#28a745" }
+    if ($result.SuspiciousCount -gt 0) {
+        Write-Log "Found $($result.SuspiciousCount) suspicious entries in hosts file" "WARNING"
+        foreach ($entry in $result.SuspiciousEntries) {
+            Write-Log "  - $entry" "WARNING"
+        }
+    } else {
+        Write-Log "Hosts file is clean" "SUCCESS"
+    }
+})
+
 $btnProtectHosts.Add_Click({
     $result = Protect-HostsFile
     if ($result.Success) { Write-Log "Hosts file protected" "SUCCESS" }
